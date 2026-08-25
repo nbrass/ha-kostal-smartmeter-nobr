@@ -185,3 +185,10 @@ class KsemClient:
             headers={"Content-Type": "text/plain"},
             text_mode=True,
         )
+
+    async def set_pause_charging(self, uuid: str, pause_active: bool):
+        payload = {"pause": pause_active}
+        await self._put(
+            f"/api/e-mobility/evse/{uuid}/setcharging",
+            json=payload
+        )

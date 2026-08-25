@@ -16,6 +16,7 @@ PLATFORMS = ["sensor", "number", "select", "switch"]
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    hass.data.setdefault(DOMAIN, {})
     return True
 
 
@@ -50,6 +51,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for evse in evse_list or []:
             # Kopie und Basisfelder
             wb = dict(evse)
+            wb["state"] = evse.get("state", "")
             uuid = wb.get("uuid")
             state = (wb.get("state") or "").lower()
 
@@ -153,12 +155,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         configuration_url=f"http://{host}",
     )
 
+    wallbox_device_info = DeviceInfo(
+        identifiers={(DOMAIN, f"{serial}_wallbox")},
+        name="Wallbox",
+        manufacturer="Kostal",
+        model="Enector",
+        via_device=(DOMAIN, serial),
+    )
+
+
     hass.data[DOMAIN][entry.entry_id] = {
         "client": client,
         "smart_coordinator": smart_coordinator,
         "wallbox_coordinator": wallbox_coordinator,
         "modbus_coordinator": modbus_coordinator,
         "device_info": device_info,
+        "wallbox_device_info": wallbox_device_info,
         "serial": serial,
     }
 
