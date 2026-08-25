@@ -265,5 +265,7 @@ class KsemObisModbusSensor(CoordinatorEntity, SensorEntity):
     def native_value(self):
         val = self.coordinator.data.get(self._key)
         if self._mapping:
+            if val is None:
+                return None
             return self._mapping.get(int(val), f"Unbekannt ({val})")
         return val
