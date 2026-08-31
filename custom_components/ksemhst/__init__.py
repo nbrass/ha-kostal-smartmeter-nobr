@@ -166,6 +166,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data[DOMAIN][entry.entry_id] = {
         "client": client,
+        "modbus_client": modbus_client,
         "smart_coordinator": smart_coordinator,
         "wallbox_coordinator": wallbox_coordinator,
         "modbus_coordinator": modbus_coordinator,
@@ -186,5 +187,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ]
     )
     if unload_ok:
+        # Disconnect Modbus client to free TCP socket
+        data = hass.data[DOMAIN].get(entry.entry_id, {})
+        modbus_client = data.get("modbus_client")
+        if modbus_client:
+            await modbus_client.disconnect()
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok

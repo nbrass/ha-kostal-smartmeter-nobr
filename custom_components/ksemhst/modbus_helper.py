@@ -71,7 +71,6 @@ class KsemModbusClient:
         if self._client:
             await self._client.close()
             self._client = None
-            self._protocol = None
             _LOGGER.debug("Modbus TCP Verbindung getrennt")
 
     async def read_all(self):
@@ -169,6 +168,8 @@ class KsemModbusClient:
                         start + total_words,
                         result,
                     )
+                    # Disconnect to force reconnection on next read
+                    await self.disconnect()
                     continue
 
                 registers = getattr(result, "registers", None)
@@ -239,6 +240,8 @@ class KsemModbusClient:
                     total_words,
                     e,
                 )
+                # Disconnect to force reconnection on next read
+                await self.disconnect()
 
         _LOGGER.debug("Alle OBIS-Daten gelesen: %s", data)
         return data

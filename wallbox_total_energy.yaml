@@ -1,0 +1,64 @@
+# ---------------------------------------------------------------------------
+# Lifetime "counts up forever" energy counter for the Kostal Enector wallbox
+# ---------------------------------------------------------------------------
+#
+# The KSEM integration exposes two relevant wallbox sensors, both from the
+# dynamic Modbus "Wallbox" register block:
+#   sensor.enector_geladene_energie      Modbus reg 49254 "Current session
+#                                        energy" (Wh). PER SESSION - resets to
+#                                        0 at the start of every charge (see
+#                                        KOSTAL MODBUS interface doc, 3.7.1).
+#   sensor.enector_ladeleistung          Modbus reg 49246 "Active power
+#                                        charging" (W).
+# There is NO lifetime wallbox-energy register in the KSEM, hence this helper.
+#
+# Adjust those entity_ids below if yours differ (Developer Tools -> States).
+#
+# How to load this file: add ONE of the include styles to configuration.yaml.
+#
+#   # if you do NOT already have `utility_meter:` / `sensor:` keys:
+#   utility_meter: !include wallbox_total_energy.yaml
+#
+#   # if you DO already have them, merge the entries into your existing blocks
+#   # instead of using the include.
+#
+# After editing: Developer Tools -> YAML -> Check config, then restart HA.
+# ---------------------------------------------------------------------------
+
+
+# ===========================================================================
+# OPTION A (recommended): accumulate the wallbox's per-session energy register.
+# Most accurate. A `utility_meter` with no `cycle:` never resets itself. Each
+# time a new charge session starts, sensor.enector_geladene_energie drops back
+# to 0; utility_meter treats that drop as a meter reset and keeps its running
+# total, then keeps adding the new session's increments. Result = sum of all
+# session energies = lifetime energy charged by the wallbox. Unit follows the
+# source (Wh).
+#
+# Put this under `utility_meter:` in configuration.yaml
+# (or use:  utility_meter: !include wallbox_total_energy.yaml  and keep only
+#  the two lines starting at `wallbox_total_charged_energy:`).
+# ===========================================================================
+wallbox_total_charged_energy:
+  source: sensor.enector_geladene_energie
+  name: Wallbox Total Charged Energy
+  # no `cycle:`  ->  lifetime counter, never resets
+
+
+# ===========================================================================
+# OPTION B (fallback): if sensor.enector_geladene_energie is missing or
+# behaves oddly, derive the total by integrating charging power instead.
+# This produces sensor.wallbox_total_charged_energy in kWh (state_class:
+# total, monotonic). Integration of a 10s-polled power value drifts a little
+# over months; `max_sub_interval` keeps it accurate during steady charging.
+#
+# Move this block under `sensor:` in configuration.yaml and delete Option A.
+# ===========================================================================
+# - platform: integration
+#   source: sensor.enector_ladeleistung
+#   name: Wallbox Total Charged Energy
+#   unit_prefix: k
+#   unit_time: h
+#   method: left
+#   max_sub_interval:
+#     minutes: 1

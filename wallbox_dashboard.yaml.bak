@@ -1,0 +1,203 @@
+title: Wallbox & Energiefluss
+icon: mdi:ev-charging
+cards:
+  # ===== HEADER: QUICK STATUS =====
+  - type: vertical-stack
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Wallbox Status
+            secondary: |
+              {{ state_attr('sensor.enector_status', 'friendly_name') }}
+            icon: mdi:ev-charging
+            icon_color: |
+              {% if states('sensor.enector_status') == 'Ladend' %}
+                green
+              {% elif states('sensor.enector_status') == 'Verbunden' %}
+                orange
+              {% elif states('sensor.enector_status') == 'Offline' %}
+                red
+              {% else %}
+                grey
+              {% endif %}
+            fill_container: true
+          - type: custom:mushroom-template-card
+            primary: Ladeleistung
+            secondary: "{{ states('sensor.enector_ladeleistung') }} W"
+            icon: mdi:flash
+            icon_color: amber
+            fill_container: true
+
+  # ===== CONTROL SECTION =====
+  - type: vertical-stack
+    title: "⚙️ Steuerung"
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-select-card
+            entity: select.wallbox_charge_mode
+            icon: mdi:power-plug-battery
+            label: Lademodus
+          - type: custom:mushroom-select-card
+            entity: select.phasenumschaltung
+            icon: mdi:sine-wave
+            label: Phasen
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-number-card
+            entity: number.min_pv_power
+            icon: mdi:solar-panel
+            label: Min PV %
+          - type: custom:mushroom-number-card
+            entity: number.min_charging_power
+            icon: mdi:lightning-bolt
+            label: Min Laden %
+
+      - type: custom:mushroom-switch-card
+        entity: switch.pause_charging
+        icon: mdi:pause-circle
+        label: Laden pausieren
+
+  # ===== ENERGY FLOW (MAIN SECTION) =====
+  - type: vertical-stack
+    title: "⚡ Energiefluss"
+    cards:
+      # Grid Status
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Netz
+            secondary: "{{ states('sensor.grid_power_total') }} W"
+            icon: mdi:transmission-tower
+            icon_color: |
+              {% if states('sensor.grid_power_total') | int(0) > 0 %}
+                red
+              {% else %}
+                green
+              {% endif %}
+            fill_container: true
+
+          # PV Power
+          - type: custom:mushroom-template-card
+            primary: PV Anlage
+            secondary: "{{ states('sensor.sum_pv_power_inverter_dc') }} W"
+            icon: mdi:solar-panel-large
+            icon_color: yellow
+            fill_container: true
+
+      # Home & Battery
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Hausverbrauch
+            secondary: "{{ states('sensor.home_consumption') }} W"
+            icon: mdi:home
+            icon_color: blue
+            fill_container: true
+
+          - type: custom:mushroom-template-card
+            primary: Batterie
+            secondary: "{{ states('sensor.system_state_of_charge') }} %"
+            icon: mdi:battery
+            icon_color: |
+              {% set soc = states('sensor.system_state_of_charge') | int(0) %}
+              {% if soc > 80 %}
+                green
+              {% elif soc > 50 %}
+                amber
+              {% elif soc > 20 %}
+                orange
+              {% else %}
+                red
+              {% endif %}
+            fill_container: true
+
+      # Wallbox Charging
+      - type: custom:mushroom-template-card
+        primary: Wallbox Ladeleistung
+        secondary: "{{ states('sensor.sum_wallbox_charge_power_total') }} W"
+        icon: mdi:ev-charging
+        icon_color: green
+        fill_container: true
+
+  # ===== ENERGY STATISTICS =====
+  - type: vertical-stack
+    title: "📊 Statistiken"
+    cards:
+      - type: horizontal-stack
+        cards:
+          # Current Session Energy
+          - type: gauge
+            entity: sensor.enector_geladene_energie
+            min: 0
+            max: 50
+            unit: Wh
+            needle: true
+            title: Session Energie
+            severity:
+              green: 0
+              yellow: 10
+              red: 30
+
+          # Available Power
+          - type: gauge
+            entity: sensor.verfügbare_ladeleistung
+            min: 0
+            max: 11000
+            unit: W
+            needle: true
+            title: Verfügbar
+
+      # History Chart (optional - requires history-stats)
+      - type: custom:mini-graph-card
+        entities:
+          - sensor.enector_ladeleistung
+          - sensor.sum_wallbox_charge_power_total
+        hours_to_show: 24
+        points_per_hour: 4
+        line_width: 2
+        legend: bottom
+        title: Ladeleistung (24h)
+        smooth: true
+
+  # ===== DETAILED SENSOR LIST =====
+  - type: vertical-stack
+    title: "🔍 Detailansicht"
+    cards:
+      - type: entities
+        title: Wallbox Sensoren
+        entities:
+          - sensor.enector_status
+          - sensor.enector_l1
+          - sensor.enector_ladeleistung
+          - sensor.enector_geladene_energie
+          - sensor.verfügbare_ladeleistung
+
+      - type: entities
+        title: Netz & Energie
+        entities:
+          - sensor.grid_power_total
+          - sensor.sum_pv_power_inverter_dc
+          - sensor.home_consumption
+          - sensor.system_state_of_charge
+          - sensor.sum_wallbox_charge_power_pv
+          - sensor.sum_wallbox_charge_power_battery
+          - sensor.sum_wallbox_charge_power_grid
+
+      - type: entities
+        title: Smartmeter Diagnose
+        entities:
+          - sensor.cpu_load
+          - sensor.cpu_temperature
+          - sensor.ram_free
+          - sensor.flash_app_free
+
+# Views für mehrere Dashboards (optional)
+views:
+  - path: wallbox
+    title: Wallbox
+    icon: mdi:ev-charging
+    cards:
+      # (Inhalte wie oben)

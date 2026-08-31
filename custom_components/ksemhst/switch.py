@@ -1,6 +1,7 @@
 import logging
 from homeassistant.components.switch import SwitchEntity, SwitchDeviceClass
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 
@@ -80,13 +81,12 @@ class KsemChargePauseSwitch(CoordinatorEntity, SwitchEntity):
         # Prüft den Status in der evse-Liste des Coordinators.
         if not self.coordinator.data:
             return False
-            
+
         evse_data_list = self.coordinator.data.get("evse", [])
         for wb in evse_data_list:
             if wb.get("uuid") == self._uuid:
                 return "Paused" in wb.get("state", "")
         return False
-        return "Paused" in evse_state
 
     async def async_turn_on(self, **kwargs):
         # Schalter AN -> Pause AKTIV -> {"pause": true}.

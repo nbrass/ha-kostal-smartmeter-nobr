@@ -1,3 +1,3 @@
 """Konstanten für KSEM Component"""
 
-DOMAIN = "ksem"
+DOMAIN = "ksemhst"
