@@ -1,104 +1,100 @@
-# KOSTAL KSEM Wallbox & Energieflow Dashboard — Built-in cards only
+# KOSTAL Plenticore + Enector Wallbox Energy Dashboard
 # Paste this into: Settings → Dashboards → Edit (pencil) → ⋮ → Raw config editor
 
 views:
-  - title: Wallbox & Energiefluss
-    icon: mdi:ev-charging
-    path: wallbox
+  - title: Energie & Wallbox
+    icon: mdi:lightning-bolt
+    path: energy
     cards:
-      - type: heading
-        heading: "Wallbox Status"
-
       - type: horizontal-stack
+        title: "⚡ Live Energiefluss"
         cards:
           - type: entity
-            entity: sensor.controlroom_wallbox_enector_status
+            entity: sensor.scb_solar_power
+            name: "☀️ Solar"
+          - type: entity
+            entity: sensor.scb_home_power
+            name: "🏠 Verbrauch"
+          - type: entity
+            entity: sensor.scb_grid_power
+            name: "🔌 Netz"
+
+      - type: horizontal-stack
+        title: "🔋 Batterie & Auto"
+        cards:
+          - type: entity
+            entity: sensor.scb_pv_to_battery_power
+            name: "PV→Batterie"
+          - type: entity
+            entity: sensor.wallbox_enector_ladeleistung
+            name: "Auto lädt"
+
+      - type: horizontal-stack
+        title: "🚗 Wallbox Steuerung"
+        cards:
+          - type: entity
+            entity: sensor.wallbox_enector_status
             name: Status
           - type: entity
-            entity: sensor.controlroom_wallbox_enector_ladeleistung
-            name: Ladeleistung (W)
-
-      - type: heading
-        heading: "⚙️ Steuerung"
+            entity: select.wallbox_charge_mode
+            name: Modus
 
       - type: horizontal-stack
         cards:
           - type: entity
-            entity: select.controlroom_wallbox_charge_mode
-            name: Lademodus
+            entity: switch.wallbox_pause_charging
+            name: Laden pausieren
           - type: entity
-            entity: select.controlroom_wallbox_phasenumschaltung
+            entity: switch.wallbox_battery_usage_bei_pv
+            name: Batterie nutzen
+
+      - type: entities
+        title: "📊 Heutige Energien"
+        entities:
+          - entity: sensor.scb_energy_yield_day
+            name: "☀️ Solar Ertrag heute"
+          - entity: sensor.scb_home_consumption_day
+            name: "🏠 Verbrauch heute"
+          - entity: sensor.scb_energy_to_grid_day
+            name: "↗️ Ins Netz heute"
+          - entity: sensor.scb_home_consumption_from_pv_day
+            name: "  ├─ aus Solar"
+          - entity: sensor.scb_home_consumption_from_battery_day
+            name: "  ├─ aus Batterie"
+          - entity: sensor.scb_home_consumption_from_grid_day
+            name: "  └─ aus Netz"
+          - entity: sensor.wallbox_enector_geladene_energie
+            name: "🚗 Auto geladen (Session)"
+
+
+      - type: entities
+        title: "📅 Jahresstatistik"
+        entities:
+          - entity: sensor.scb_energy_yield_year
+            name: "☀️ Solar Ertrag Jahr"
+          - entity: sensor.scb_home_consumption_year
+            name: "🏠 Verbrauch Jahr"
+          - entity: sensor.scb_energy_to_grid_year
+            name: "↗️ Ins Netz Jahr"
+          - entity: sensor.scb_own_consumption_rate_year
+            name: "📈 Eigenverbrauchsquote Jahr"
+
+      - type: entities
+        title: "🔧 Wallbox Details"
+        entities:
+          - entity: sensor.enector_charging_l1
+            name: Strom L1
+          - entity: sensor.enector_charging_l2
+            name: Strom L2
+          - entity: sensor.enector_charging_l3
+            name: Strom L3
+          - entity: sensor.wallbox_enector_ladeleistung
+            name: Ladeleistung (Total)
+          - entity: sensor.wallbox_verfugbare_ladeleistung
+            name: Verfügbare Leistung
+          - entity: select.wallbox_phasenumschaltung
             name: Phasen
-
-      - type: horizontal-stack
-        cards:
-          - type: entity
-            entity: number.controlroom_wallbox_min_pv_power
+          - entity: number.wallbox_min_pv_power
             name: Min PV Power %
-          - type: entity
-            entity: number.controlroom_wallbox_min_charging_power
+          - entity: number.wallbox_min_charging_power
             name: Min Charging Power %
-
-      - type: entity
-        entity: switch.controlroom_wallbox_pause_charging
-        name: Laden pausieren
-
-      - type: heading
-        heading: "⚡ Energiefluss (Live)"
-
-      - type: entities
-        title: Netzstrom
-        entities:
-          - entity: sensor.controlroom_grid_power_total
-            name: Netz (+ Import / − Export) [W]
-          - entity: sensor.controlroom_sum_pv_power_inverter_dc
-            name: PV Anlage [W]
-          - entity: sensor.controlroom_home_consumption
-            name: Hausverbrauch [W]
-
-      - type: entities
-        title: Batterie & Wallbox
-        entities:
-          - entity: sensor.controlroom_system_state_of_charge
-            name: Batterie SoC [%]
-          - entity: sensor.controlroom_sum_battery_charge_discharge_dc
-            name: Batterie Laden/Entladen [W]
-          - entity: sensor.controlroom_sum_wallbox_charge_power_total
-            name: "Wallbox Gesamtleistung [W]"
-          - entity: sensor.controlroom_sum_wallbox_charge_power_pv
-            name: "  ├─ aus PV [W]"
-          - entity: sensor.controlroom_sum_wallbox_charge_power_battery
-            name: "  ├─ aus Batterie [W]"
-          - entity: sensor.controlroom_sum_wallbox_charge_power_grid
-            name: "  └─ aus Netz [W]"
-
-      - type: heading
-        heading: "Wallbox Sensoren"
-
-      - type: entities
-        entities:
-          - entity: sensor.controlroom_wallbox_enector_status
-            name: Wallbox Status
-          - entity: sensor.controlroom_wallbox_enector_l1
-            name: Strom L1 [A]
-          - entity: sensor.controlroom_wallbox_enector_ladeleistung
-            name: Ladeleistung [W]
-          - entity: sensor.controlroom_wallbox_enector_geladene_energie
-            name: "Diese Session [Wh]"
-          - entity: sensor.controlroom_wallbox_verfügbare_ladeleistung
-            name: Verfügbare Leistung [W]
-
-      - type: heading
-        heading: "🔍 Smartmeter Diagnose"
-
-      - type: entities
-        title: System Health
-        entities:
-          - entity: sensor.controlroom_cpu_load
-            name: CPU Last [%]
-          - entity: sensor.controlroom_cpu_temperature
-            name: CPU Temperatur [°C]
-          - entity: sensor.controlroom_ram_free
-            name: RAM frei [kB]
-          - entity: sensor.controlroom_flash_app_free
-            name: Flash (App) frei [B]
