@@ -500,7 +500,7 @@ SENSOR_DEFINITIONS = {
         "device": "smartmeter",
     },
     49200: {
-        "name": "Enector_evse_status",
+        "name": "Enector EVSE Status",
         "unit": "",
         "scale": 1,
         "type": "uint16",
@@ -517,7 +517,7 @@ SENSOR_DEFINITIONS = {
         },
     },
     49206: {
-        "name": "Enector_status",
+        "name": "Enector Status",
         "unit": "",
         "scale": 1,
         "type": "uint64",
@@ -525,18 +525,18 @@ SENSOR_DEFINITIONS = {
         "device_class": "enum",
         "state_class": None,
         "map": {
-            0: "Unbekannt",
+            0: "Unknown",
             1: "Offline",
-            2: "Verbunden",
-            3: "Pausiert",
+            2: "Connected",
+            3: "Paused",
             4: "Probing",
-            5: "Ladend",
-            6: "Kommunikationsfehler",
+            5: "Charging",
+            6: "Communication Error",
             7: "Service Mode",
         },
     },
     49218: {
-        "name": "Enector_L1_current",
+        "name": "Enector L1 Current",
         "unit": "A",
         "scale": 0.001,
         "type": "uint32",
@@ -545,7 +545,7 @@ SENSOR_DEFINITIONS = {
         "device": "wallbox",
     },
     49220: {
-        "name": "Enector_L2_current",
+        "name": "Enector L2 Current",
         "unit": "A",
         "scale": 0.001,
         "type": "uint32",
@@ -554,7 +554,7 @@ SENSOR_DEFINITIONS = {
         "device": "wallbox",
     },
     49222: {
-        "name": "Enector_L3_current",
+        "name": "Enector L3 Current",
         "unit": "A",
         "scale": 0.001,
         "type": "uint32",
@@ -563,7 +563,7 @@ SENSOR_DEFINITIONS = {
         "device": "wallbox",
     },
     49246: {
-        "name": "Enector_Ladeleistung",
+        "name": "Enector Charging Power",
         "unit": "W",
         "scale": 0.001,
         "type": "uint64",
@@ -572,7 +572,7 @@ SENSOR_DEFINITIONS = {
         "device": "wallbox",
     },
     49254: {
-        "name": "Enector_geladene_Energie",
+        "name": "Enector Charged Energy",
         "unit": "Wh",
         "scale": 0.001,
         "type": "uint64",
@@ -581,7 +581,7 @@ SENSOR_DEFINITIONS = {
         "device": "wallbox",
     },
     49258: {
-        "name": "Enector_session_duration",
+        "name": "Enector Session Duration",
         "unit": "s",
         "scale": 1,
         "type": "uint64",

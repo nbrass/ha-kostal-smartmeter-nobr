@@ -21,7 +21,7 @@ MODE_MAP = {
 }
 REVERSE_MODE_MAP = {v: k for k, v in MODE_MAP.items()}
 
-PHASE_MAP = {0: "3 Phasen", 1: "1 Phase", 2: "Automatisch"}
+PHASE_MAP = {0: "3 Phases", 1: "1 Phase", 2: "Automatic"}
 REVERSE_PHASE_MAP = {v: k for k, v in PHASE_MAP.items()}
 
 
@@ -88,14 +88,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 
 class KsemPhaseSwitchSelect(CoordinatorEntity, SelectEntity):
-    """Phasenumschaltung (nur eine WB)."""
+    """Phase Switching (only one wallbox)."""
 
     def __init__(self, hass, entry_id, coordinator, client):
         super().__init__(coordinator)
         self._hass = hass
         self._entry_id = entry_id
         self._client = client
-        self._attr_name = "Phasenumschaltung"
+        self._attr_name = "Phase Switching"
         self._attr_unique_id = f"{entry_id}_ksem_phase_switch"
         self._attr_options = list(PHASE_MAP.values())
 

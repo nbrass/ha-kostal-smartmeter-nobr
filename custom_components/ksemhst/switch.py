@@ -40,8 +40,8 @@ class BatteryUsageSwitch(CoordinatorEntity, SwitchEntity):
     def __init__(self, coordinator, client, device_info: DeviceInfo, entry_id: str):
         super().__init__(coordinator)
         self._client = client
-        self._attr_name = "Battery Usage bei PV"
-        # pro Config-Eintrag eindeutig, falls Integration mehrfach vorhanden ist
+        self._attr_name = "Battery Usage During PV"
+        # Unique per config entry, if the integration is installed multiple times
         self._attr_unique_id = f"{entry_id}_ksem_battery_usage"
         self._attr_device_info = device_info
 

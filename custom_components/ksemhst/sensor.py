@@ -142,7 +142,7 @@ async def async_setup_entry(
 class KsemEvseAvailablePowerSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, device_info):
         super().__init__(coordinator)
-        self._attr_name = "Verfügbare Ladeleistung"
+        self._attr_name = "Available Charging Power"
         self._attr_unique_id = "ksem_evse_available_power"
         self._attr_native_unit_of_measurement = "W"
         self._attr_device_info = device_info
