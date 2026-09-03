@@ -50,7 +50,6 @@ async def async_setup_entry(
         uuid = wb.get("uuid")
         label = wb.get("label", "Wallbox")
         model = wb.get("model", "")
-        state = wb.get("state", "unbekannt")
         details = wb.get("details") or {}
         wb_serial = details.get("serial", uuid)
         version = details.get("version", "")
@@ -65,7 +64,7 @@ async def async_setup_entry(
         )
 
         wallbox_entities.append(
-            KsemWallboxSensor(uuid, f"{label} State", model, wb_serial, version, state)
+            KsemWallboxSensor(wallbox, uuid, f"{label} State", model, wb_serial, version)
         )
         wb_entities_created = True
 
@@ -108,7 +107,6 @@ async def async_setup_entry(
             uuid = wb_now.get("uuid")
             label = wb_now.get("label", "Wallbox")
             model = wb_now.get("model", "")
-            state = wb_now.get("state", "unbekannt")
             details = wb_now.get("details") or {}
             wb_serial = details.get("serial", uuid)
             version = details.get("version", "")
@@ -126,7 +124,7 @@ async def async_setup_entry(
             )
             new_entities = [
                 KsemWallboxSensor(
-                    uuid, f"{label} State", model, wb_serial, version, state
+                    wallbox, uuid, f"{label} State", model, wb_serial, version
                 )
             ]
             async_add_entities(new_entities)
@@ -216,23 +214,88 @@ class KsemSmartmeterSensor(CoordinatorEntity, SensorEntity):
         return self.coordinator.data.get(self._sensor_key)
 
 
-class KsemWallboxSensor(SensorEntity):
-    def __init__(self, uuid, name, model, serial, version, value):
+# Wallbox state mapping - translates raw API states to human-readable text
+WALLBOX_STATE_MAP = {
+    # Charging states
+    "stateCharging": "Charging",
+    "stateChargingEnabled": "Charging",
+
+    # Finished states
+    "stateFinished": "Finished",
+    "stateFinishedSubStateChargingEnabled": "Finished - Charging Enabled",
+    "stateFinishedSubStateChargingDisabled": "Finished - Charging Disabled",
+
+    # Disconnected states
+    "stateDisconnected": "Disconnected",
+    "stateDisconnectedNoVehicle": "Disconnected - No Vehicle",
+
+    # Ready/Available states
+    "stateReady": "Ready",
+    "stateReadyForCharging": "Ready for Charging",
+    "stateAvailable": "Available",
+
+    # Error/Error states
+    "stateError": "Error",
+    "stateErrorCommunication": "Communication Error",
+
+    # Paused states
+    "statePaused": "Paused",
+    "statePausedChargingDisabled": "Paused - Charging Disabled",
+
+    # Other states
+    "stateProbing": "Probing",
+    "stateServiceMode": "Service Mode",
+    "stateOffline": "Offline",
+}
+
+
+class KsemWallboxSensor(CoordinatorEntity, SensorEntity):
+    """Live wallbox state sensor backed by the wallbox coordinator."""
+
+    def __init__(self, coordinator, uuid, name, model, serial, version):
+        super().__init__(coordinator)
         self._attr_name = name
         self._attr_unique_id = f"{uuid}_state"
         self._uuid = uuid
         self._model = model
         self._serial = serial
         self._version = version
-        self._state = value
+
+    def _current_evse(self) -> dict | None:
+        """Find this wallbox in the coordinator data (by uuid, else first)."""
+        data = self.coordinator.data or {}
+        for wb in data.get("evse") or []:
+            if wb.get("uuid") == self._uuid:
+                return wb
+        return first_evse_from_coordinator(self.coordinator)
+
+    def _translate_state(self, raw_state: str) -> str:
+        """Translate raw API state to human-readable text."""
+        if not raw_state:
+            return "Unknown"
+
+        # Try exact match first
+        if raw_state in WALLBOX_STATE_MAP:
+            return WALLBOX_STATE_MAP[raw_state]
+
+        # Log unmapped state at debug level (runs every poll now)
+        _LOGGER.debug("Unmapped wallbox state: '%s'", raw_state)
+
+        # Return raw state if no mapping found
+        return raw_state
 
     @property
-    def state(self):
-        return self._state
+    def native_value(self):
+        """Return the translated wallbox state."""
+        wb = self._current_evse()
+        if not wb:
+            return None
+        return self._translate_state(wb.get("state", ""))
 
     @property
-    def unique_id(self):
-        return self._attr_unique_id
+    def available(self) -> bool:
+        """Entity is available if coordinator is OK and we found the wallbox."""
+        return super().available and self._current_evse() is not None
 
     @property
     def device_info(self) -> DeviceInfo:

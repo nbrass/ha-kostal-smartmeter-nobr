@@ -1,7 +1,7 @@
 {
   "domain": "ksemhst",
   "name": "Kostal Smartmeter HSt",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "documentation": "https://github.com/HenrikSte/ha-kostal-smartmeter-hst",
   "issue_tracker": "https://github.com/HenrikSte/ha-kostal-smartmeter-hst/issues",
   "dependencies": [],
