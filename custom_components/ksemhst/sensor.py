@@ -353,5 +353,13 @@ class KsemObisModbusSensor(CoordinatorEntity, SensorEntity):
         if self._mapping:
             if val is None:
                 return None
-            return self._mapping.get(int(val), f"Unbekannt ({val})")
+            mapped = self._mapping.get(int(val))
+            if mapped is None:
+                _LOGGER.warning(
+                    "%s: unmapped code %s (address %s)", self._key, val, self._address
+                )
+                # Return None (HA shows "unknown") instead of an undeclared
+                # enum option, which HA would reject and freeze the sensor.
+                return None
+            return mapped
         return val
