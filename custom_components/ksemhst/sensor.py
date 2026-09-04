@@ -6,6 +6,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.device_registry import DeviceInfo
 from .const import DOMAIN
 from homeassistant.helpers.entity import EntityCategory
+from homeassistant.loader import async_get_integration
 from .modbus_map import SENSOR_DEFINITIONS
 from homeassistant.components.sensor import SensorDeviceClass
 from .helper import first_evse_from_coordinator  # <- Helper from helper.py
@@ -39,6 +40,12 @@ async def async_setup_entry(
         KsemSmartmeterSensor(smart, key, name, unit, device_info, serial)
         for key, (name, unit) in SENSOR_TYPES.items()
     ]
+
+    # Integration version sensor (from manifest.json)
+    integration = await async_get_integration(hass, DOMAIN)
+    smartmeter_entities.append(
+        KsemVersionSensor(str(integration.version), device_info, serial)
+    )
 
     # 2) Exactly ONE wallbox (if available)
     wallbox_entities: list = []
@@ -212,6 +219,30 @@ class KsemSmartmeterSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self):
         return self.coordinator.data.get(self._sensor_key)
+
+
+class KsemVersionSensor(SensorEntity):
+    """Static sensor exposing the installed integration version / GitHub tag."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:tag-outline"
+
+    def __init__(self, version: str, device_info, serial):
+        self._version = version
+        self._attr_name = "KSEMHST Version"
+        self._attr_unique_id = f"{serial}_integration_version"
+        self._attr_device_info = device_info
+
+    @property
+    def native_value(self):
+        return self._version
+
+    @property
+    def extra_state_attributes(self):
+        return {
+            "version": self._version,
+            "github_tag": f"v{self._version}",
+        }
 
 
 # Wallbox state mapping - translates raw API states to human-readable text
