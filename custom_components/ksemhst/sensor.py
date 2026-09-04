@@ -41,10 +41,12 @@ async def async_setup_entry(
         for key, (name, unit) in SENSOR_TYPES.items()
     ]
 
-    # Integration version sensor (from manifest.json)
+    # Integration version sensor (from manifest.json).
+    # No device_info on purpose: it must stay visible even if the
+    # Smartmeter/Wallbox device is disabled by the user.
     integration = await async_get_integration(hass, DOMAIN)
     smartmeter_entities.append(
-        KsemVersionSensor(str(integration.version), device_info, serial)
+        KsemVersionSensor(str(integration.version), serial)
     )
 
     # 2) Exactly ONE wallbox (if available)
@@ -227,11 +229,10 @@ class KsemVersionSensor(SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_icon = "mdi:tag-outline"
 
-    def __init__(self, version: str, device_info, serial):
+    def __init__(self, version: str, serial):
         self._version = version
         self._attr_name = "KSEMHST Version"
         self._attr_unique_id = f"{serial}_integration_version"
-        self._attr_device_info = device_info
 
     @property
     def native_value(self):
