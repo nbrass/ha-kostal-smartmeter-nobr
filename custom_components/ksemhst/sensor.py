@@ -9,7 +9,10 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.loader import async_get_integration
 from .modbus_map import SENSOR_DEFINITIONS
 from homeassistant.components.sensor import SensorDeviceClass
-from .helper import first_evse_from_coordinator  # <- Helper from helper.py
+from .helper import (  # <- Helpers from helper.py
+    first_evse_from_coordinator,
+    parse_wallbox_state,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -246,43 +249,14 @@ class KsemVersionSensor(SensorEntity):
         }
 
 
-# Wallbox state mapping - translates raw API states to human-readable text
-WALLBOX_STATE_MAP = {
-    # Charging states
-    "stateCharging": "Charging",
-    "stateChargingEnabled": "Charging",
-
-    # Finished states
-    "stateFinished": "Finished",
-    "stateFinishedSubStateChargingEnabled": "Finished - Charging Enabled",
-    "stateFinishedSubStateChargingDisabled": "Finished - Charging Disabled",
-
-    # Disconnected states
-    "stateDisconnected": "Disconnected",
-    "stateDisconnectedNoVehicle": "Disconnected - No Vehicle",
-
-    # Ready/Available states
-    "stateReady": "Ready",
-    "stateReadyForCharging": "Ready for Charging",
-    "stateAvailable": "Available",
-
-    # Error/Error states
-    "stateError": "Error",
-    "stateErrorCommunication": "Communication Error",
-
-    # Paused states
-    "statePaused": "Paused",
-    "statePausedChargingDisabled": "Paused - Charging Disabled",
-
-    # Other states
-    "stateProbing": "Probing",
-    "stateServiceMode": "Service Mode",
-    "stateOffline": "Offline",
-}
-
-
 class KsemWallboxSensor(CoordinatorEntity, SensorEntity):
-    """Live wallbox state sensor backed by the wallbox coordinator."""
+    """Live wallbox state sensor backed by the wallbox coordinator.
+
+    The KSEM REST ``state`` field is a compound value of the form
+    ``state<Main>SubState<Sub>``. The sensor state is the *main* part
+    (e.g. "Charging", "Finished", "Paused"); the sub-state and the raw
+    value are exposed as attributes.
+    """
 
     def __init__(self, coordinator, uuid, name, model, serial, version):
         super().__init__(coordinator)
@@ -301,28 +275,21 @@ class KsemWallboxSensor(CoordinatorEntity, SensorEntity):
                 return wb
         return first_evse_from_coordinator(self.coordinator)
 
-    def _translate_state(self, raw_state: str) -> str:
-        """Translate raw API state to human-readable text."""
-        if not raw_state:
-            return "Unknown"
-
-        # Try exact match first
-        if raw_state in WALLBOX_STATE_MAP:
-            return WALLBOX_STATE_MAP[raw_state]
-
-        # Log unmapped state at debug level (runs every poll now)
-        _LOGGER.debug("Unmapped wallbox state: '%s'", raw_state)
-
-        # Return raw state if no mapping found
-        return raw_state
-
     @property
     def native_value(self):
-        """Return the translated wallbox state."""
+        """Return the main wallbox state parsed from the compound value."""
         wb = self._current_evse()
         if not wb:
             return None
-        return self._translate_state(wb.get("state", ""))
+        main, _sub = parse_wallbox_state(wb.get("state", ""))
+        return main or "Unknown"
+
+    @property
+    def extra_state_attributes(self):
+        wb = self._current_evse()
+        raw = wb.get("state", "") if wb else ""
+        _main, sub = parse_wallbox_state(raw)
+        return {"sub_state": sub, "raw_state": raw or None}
 
     @property
     def available(self) -> bool:

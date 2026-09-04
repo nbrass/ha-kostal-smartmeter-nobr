@@ -8,6 +8,7 @@ from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from datetime import timedelta
 from .const import DOMAIN
 from .api import KsemClient
+from .helper import parse_wallbox_state
 from .modbus_helper import KsemModbusClient
 import asyncio
 
@@ -53,10 +54,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             wb = dict(evse)
             wb["state"] = evse.get("state", "")
             uuid = wb.get("uuid")
-            state = (wb.get("state") or "").lower()
+            main_state, _sub = parse_wallbox_state(wb.get("state") or "")
+            main_state = (main_state or "").lower()
 
             # Wenn evselist bereits einen Kommunikationsfehler signalisiert, Details überspringen
-            if "commerror" in state or "error" in state or "offline" in state:
+            if "error" in main_state or main_state == "offline":
                 wb["available"] = False
                 wb["details"] = None
                 result.append(wb)
