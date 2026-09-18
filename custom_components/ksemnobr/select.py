@@ -1,17 +1,24 @@
 import asyncio
 import json
 import logging
+from datetime import timedelta
 from typing import Optional
 
 from aiohttp import WSMsgType
 from homeassistant.components.select import SelectEntity
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+import homeassistant.util.dt as dt_util
 
 from .const import DOMAIN
 from .helper import first_evse_from_coordinator  # Single-WB Helfer
 
 _LOGGER = logging.getLogger(__name__)
+
+# The KSEM can take up to 3 minutes to actually execute a phase switch.
+# Until then we keep showing the just-selected target value optimistically,
+# so the 30s coordinator poll doesn't flip the UI back to the old value.
+PHASE_SWITCH_PENDING_TIMEOUT = timedelta(seconds=200)
 
 MODE_MAP = {
     "lock": "Lock Mode",
@@ -98,6 +105,8 @@ class KsemPhaseSwitchSelect(CoordinatorEntity, SelectEntity):
         self._attr_name = "Phase Switching"
         self._attr_unique_id = f"{entry_id}_ksem_phase_switch"
         self._attr_options = list(PHASE_MAP.values())
+        self._pending_value: Optional[int] = None
+        self._pending_since = None
 
     # DeviceInfo dynamisch: wenn WB existiert -> Wallbox, sonst Smartmeter
     @property
@@ -115,6 +124,26 @@ class KsemPhaseSwitchSelect(CoordinatorEntity, SelectEntity):
     def current_option(self) -> Optional[str]:
         data = self.coordinator.data or {}
         val = data.get("phase_usage_state", 0)
+
+        if self._pending_value is not None:
+            if val == self._pending_value:
+                # KSEM has picked up the switch -> drop the optimistic value
+                self._pending_value = None
+                self._pending_since = None
+            elif dt_util.utcnow() - self._pending_since < PHASE_SWITCH_PENDING_TIMEOUT:
+                # Switch may still be in progress (up to 3 min) -> keep showing
+                # the target value instead of the still-stale coordinator value
+                return PHASE_MAP.get(self._pending_value)
+            else:
+                # Timed out without the KSEM confirming the target value
+                _LOGGER.warning(
+                    "Phase switch to %s not confirmed after %s, showing actual value",
+                    PHASE_MAP.get(self._pending_value),
+                    PHASE_SWITCH_PENDING_TIMEOUT,
+                )
+                self._pending_value = None
+                self._pending_since = None
+
         return PHASE_MAP.get(val)
 
     async def async_select_option(self, option: str):
@@ -123,7 +152,10 @@ class KsemPhaseSwitchSelect(CoordinatorEntity, SelectEntity):
             return
         new_value = REVERSE_PHASE_MAP[option]
         await self._client.set_phase_switching(new_value)
-        await self.coordinator.async_request_refresh()
+
+        self._pending_value = new_value
+        self._pending_since = dt_util.utcnow()
+        self.async_write_ha_state()
 
 
 class KsemChargeModeSelect(SelectEntity):
