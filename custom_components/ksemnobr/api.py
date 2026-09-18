@@ -138,7 +138,7 @@ class KsemClient:
         url = f"http://{self.host}/api/e-mobility/config/chargemode"
 
         # Hole aktuelle Werte aus dem WebSocket-Cache
-        # (DOMAIN is "ksemhst"; select.py writes the cache under that key)
+        # (DOMAIN is "ksemnobr"; select.py writes the cache under that key)
         cache = (
             self.hass.data.get(DOMAIN, {})
             .get(entry_id, {})

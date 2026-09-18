@@ -234,7 +234,7 @@ class KsemVersionSensor(SensorEntity):
 
     def __init__(self, version: str, serial):
         self._version = version
-        self._attr_name = "KSEMHST Version"
+        self._attr_name = "KSEMNOBR Version"
         self._attr_unique_id = f"{serial}_integration_version"
 
     @property
